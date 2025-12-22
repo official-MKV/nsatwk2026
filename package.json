@@ -2,16 +2,21 @@
   "name": "nsatwk",
   "version": "0.1.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "migrate": "node scripts/migrate-to-sanity.js"
   },
   "dependencies": {
+    "@sanity/client": "^7.13.2",
+    "dotenv": "^17.2.3",
     "framer-motion": "^12.23.26",
     "lucide-react": "^0.562.0",
     "next": "16.1.0",
+    "next-sanity": "^12.0.5",
     "react": "19.2.3",
     "react-dom": "19.2.3"
   },

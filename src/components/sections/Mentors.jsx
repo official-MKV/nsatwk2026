@@ -1,13 +1,37 @@
 'use client';
 
-import { useRef } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { motion, useInView } from 'framer-motion';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { mentorsData } from '@/data/data';
+import { fetchSanityData, queries } from '@/lib/sanity';
 
 export default function Mentors() {
   const sectionRef = useRef(null);
   const isInView = useInView(sectionRef, { once: true, margin: '-100px' });
+  const [mentorsData, setMentorsData] = useState({ title: 'The Mentors', description: 'Meet the seasoned professionals guiding the next generation of space entrepreneurs and startup founders.', mentors: [] });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadMentors() {
+      try {
+        const mentors = await fetchSanityData(queries.mentors);
+        const formattedMentors = mentors.map(mentor => ({
+          id: mentor._id,
+          name: mentor.name,
+          title: mentor.title,
+          organization: mentor.organization,
+          bio: mentor.bio,
+          image: mentor.image || mentor.imagePath || '/mentors/mentor1.jpg'
+        }));
+        setMentorsData(prev => ({ ...prev, mentors: formattedMentors }));
+      } catch (error) {
+        console.error('Error loading mentors:', error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadMentors();
+  }, []);
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -53,13 +77,19 @@ export default function Mentors() {
         </motion.div>
 
         {/* Mentors Grid */}
-        <motion.div
-          variants={containerVariants}
-          initial="hidden"
-          animate={isInView ? 'visible' : 'hidden'}
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"
-        >
-          {mentorsData.mentors.map((mentor, index) => (
+        {loading ? (
+          <div className="text-center py-12">
+            <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-primary border-r-transparent"></div>
+            <p className="mt-4 text-gray-400">Loading mentors...</p>
+          </div>
+        ) : (
+          <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            animate={isInView ? 'visible' : 'hidden'}
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"
+          >
+            {mentorsData.mentors.map((mentor, index) => (
             <motion.div
               key={mentor.id}
               variants={itemVariants}
@@ -111,7 +141,8 @@ export default function Mentors() {
               </div>
             </motion.div>
           ))}
-        </motion.div>
+          </motion.div>
+        )}
 
         {/* Navigation dots/arrows */}
         <motion.div

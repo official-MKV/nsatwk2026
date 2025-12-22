@@ -1,13 +1,35 @@
 'use client';
 
-import { useRef } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { motion, useInView } from 'framer-motion';
 import { ChevronLeft, ChevronRight, Plus, Minus } from 'lucide-react';
-import { hostsData } from '@/data/data';
+import { fetchSanityData, queries } from '@/lib/sanity';
 
 export default function Hosts() {
   const sectionRef = useRef(null);
   const isInView = useInView(sectionRef, { once: true, margin: '-100px' });
+  const [hostsData, setHostsData] = useState({ title: 'The Hosts & Keynotes', description: 'Meet the seasoned professionals guiding the next generation of space entrepreneurs as it grow startups in Africa.', hosts: [] });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadHosts() {
+      try {
+        const hosts = await fetchSanityData(queries.hosts);
+        setHostsData(prev => ({ ...prev, hosts: hosts.map(host => ({
+          id: host._id,
+          name: host.name,
+          role: host.role,
+          organization: host.organization,
+          image: host.image || host.imagePath || '/speaker-1.png'
+        })) }));
+      } catch (error) {
+        console.error('Error loading hosts:', error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadHosts();
+  }, []);
 
   const containerVariants = {
     hidden: { opacity: 0 },
@@ -53,13 +75,19 @@ export default function Hosts() {
         </motion.div>
 
         {/* Hosts Grid */}
-        <motion.div
-          variants={containerVariants}
-          initial="hidden"
-          animate={isInView ? 'visible' : 'hidden'}
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"
-        >
-          {hostsData.hosts.map((host, index) => (
+        {loading ? (
+          <div className="text-center py-12">
+            <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-primary border-r-transparent"></div>
+            <p className="mt-4 text-gray-400">Loading hosts...</p>
+          </div>
+        ) : (
+          <motion.div
+            variants={containerVariants}
+            initial="hidden"
+            animate={isInView ? 'visible' : 'hidden'}
+            className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"
+          >
+            {hostsData.hosts.map((host, index) => (
             <motion.div
               key={host.id}
               variants={itemVariants}
@@ -102,7 +130,8 @@ export default function Hosts() {
               </div>
             </motion.div>
           ))}
-        </motion.div>
+          </motion.div>
+        )}
 
         {/* Navigation */}
         <motion.div

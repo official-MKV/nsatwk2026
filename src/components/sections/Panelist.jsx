@@ -1,12 +1,36 @@
 'use client';
 
-import { useRef } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { motion, useInView } from 'framer-motion';
-import { panelistsData } from '@/data/data';
+import { fetchSanityData, queries } from '@/lib/sanity';
 
 export default function Panelists() {
   const sectionRef = useRef(null);
   const isInView = useInView(sectionRef, { once: true, margin: '-100px' });
+  const [panelistsData, setPanelistsData] = useState({ title: 'The Panelists (Institutions)', categories: [] });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadPanelists() {
+      try {
+        const categories = await fetchSanityData(queries.panelists);
+        const formattedCategories = categories.map(category => ({
+          name: category.name,
+          institutions: category.institutions.map((inst, idx) => ({
+            id: `${category._id}-${idx}`,
+            name: inst.name,
+            logo: inst.logo || inst.logoPath || '/logos/default.png'
+          }))
+        }));
+        setPanelistsData(prev => ({ ...prev, categories: formattedCategories }));
+      } catch (error) {
+        console.error('Error loading panelists:', error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadPanelists();
+  }, []);
 
   const containerVariants = {
     hidden: { opacity: 0 },

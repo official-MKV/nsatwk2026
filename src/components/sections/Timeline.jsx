@@ -1,13 +1,42 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import { timelineData } from '@/data/data';
+import { fetchSanityData, queries } from '@/lib/sanity';
 
 export default function Timeline() {
   const scrollRef = useRef(null);
   const itemRefs = useRef([]);
   const [activeEvent, setActiveEvent] = useState(0);
+  const [timelineData, setTimelineData] = useState({ title: 'Event Timeline', events: [] });
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadTimeline() {
+      try {
+        const events = await fetchSanityData(queries.timeline);
+        const formattedEvents = events.map((event, index) => ({
+          id: event._id,
+          day: event.day,
+          date: new Date(event.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+          title: event.title,
+          time: event.time,
+          venue: event.venue,
+          location: event.location,
+          description: event.description,
+          highlights: event.highlights,
+          image: event.image || event.imagePath || '/background.jpg',
+          activities: event.activities
+        }));
+        setTimelineData(prev => ({ ...prev, events: formattedEvents }));
+      } catch (error) {
+        console.error('Error loading timeline:', error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadTimeline();
+  }, []);
 
   const scrollToEvent = (index) => {
     setActiveEvent(index);
@@ -57,11 +86,17 @@ export default function Timeline() {
         </div>
 
         {/* Scrollable Area */}
-        <div 
-          ref={scrollRef}
-          className="overflow-x-auto hide-scrollbar"
-          style={{ scrollSnapType: 'x proximity' }}
-        >
+        {loading ? (
+          <div className="text-center py-24">
+            <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-green-500 border-r-transparent"></div>
+            <p className="mt-4 text-gray-400">Loading timeline...</p>
+          </div>
+        ) : (
+          <div
+            ref={scrollRef}
+            className="overflow-x-auto hide-scrollbar"
+            style={{ scrollSnapType: 'x proximity' }}
+          >
           <div className="relative flex pb-6 min-w-max">
             
             {/* STATIC HORIZONTAL LINE */}
@@ -124,7 +159,8 @@ export default function Timeline() {
               </div>
             ))}
           </div>
-        </div>
+          </div>
+        )}
       </div>
     </section>
   );
