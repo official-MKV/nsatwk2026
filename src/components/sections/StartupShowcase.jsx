@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence, useInView } from 'framer-motion';
 import { X, ExternalLink, Calendar, DollarSign, Tag } from 'lucide-react';
-import { startupShowcaseData } from '@/data/data';
+import { fetchSanityData, queries } from '@/lib/sanity';
 
 // Generate orbital positions for constellation effect
 const generateOrbPositions = (count) => {
@@ -35,9 +35,34 @@ export default function StartupShowcase() {
   const [selectedStartup, setSelectedStartup] = useState(null);
   const [orbPositions, setOrbPositions] = useState([]);
   const [hoveredOrb, setHoveredOrb] = useState(null);
+  const [startupShowcaseData, setStartupShowcaseData] = useState({ title: 'The Startup Showcase (Demo Day)', subtitle: 'Displaying the Urban Lift via Systems', startups: [] });
+  const [loading, setLoading] = useState(true);
+  const [showRegistrationPopup, setShowRegistrationPopup] = useState(false);
 
   useEffect(() => {
-    setOrbPositions(generateOrbPositions(startupShowcaseData.startups.length));
+    async function loadStartups() {
+      try {
+        const startups = await fetchSanityData(queries.startups);
+        const formattedStartups = startups.map((startup, index) => ({
+          id: startup._id,
+          name: startup.name,
+          category: startup.category,
+          description: startup.description,
+          founded: startup.founded,
+          funding: startup.funding,
+          website: startup.website,
+          video: startup.video,
+          logo: startup.logo || startup.logoPath || '/logo.png'
+        }));
+        setStartupShowcaseData(prev => ({ ...prev, startups: formattedStartups }));
+        setOrbPositions(generateOrbPositions(formattedStartups.length));
+      } catch (error) {
+        console.error('Error loading startups:', error);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadStartups();
   }, []);
 
   const handleOrbClick = (startup, index) => {
@@ -107,12 +132,18 @@ export default function StartupShowcase() {
         </motion.div>
 
         {/* Constellation Container */}
-        <motion.div
-          initial={{ opacity: 0 }}
-          animate={isInView ? { opacity: 1 } : {}}
-          transition={{ duration: 1, delay: 0.3 }}
-          className="relative w-full h-[500px] md:h-[600px] lg:h-[700px]"
-        >
+        {loading ? (
+          <div className="text-center py-24">
+            <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-primary border-r-transparent"></div>
+            <p className="mt-4 text-gray-400">Loading startups...</p>
+          </div>
+        ) : (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={isInView ? { opacity: 1 } : {}}
+            transition={{ duration: 1, delay: 0.3 }}
+            className="relative w-full h-[500px] md:h-[600px] lg:h-[700px]"
+          >
           {/* Connection Lines SVG */}
           <svg className="absolute inset-0 w-full h-full pointer-events-none">
             {connections.map((conn, i) => (
@@ -268,7 +299,8 @@ export default function StartupShowcase() {
             <div className="w-32 h-32 rounded-full border border-primary/20" />
             <div className="absolute inset-4 rounded-full border border-primary/10" />
           </motion.div>
-        </motion.div>
+          </motion.div>
+        )}
 
         {/* Startup Popup */}
         <AnimatePresence>
@@ -334,6 +366,21 @@ export default function StartupShowcase() {
                       {selectedStartup.description}
                     </p>
 
+                    {/* Video Section */}
+                    {selectedStartup.video && (
+                      <div className="aspect-video rounded-lg overflow-hidden bg-black">
+                        <iframe
+                          width="100%"
+                          height="100%"
+                          src={selectedStartup.video}
+                          title={`${selectedStartup.name} video`}
+                          frameBorder="0"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                          allowFullScreen
+                        ></iframe>
+                      </div>
+                    )}
+
                     <div className="grid grid-cols-2 gap-4">
                       <div className="p-3 bg-white/5 rounded-lg">
                         <div className="flex items-center gap-2 text-gray-400 text-sm mb-1">
@@ -351,15 +398,26 @@ export default function StartupShowcase() {
                       </div>
                     </div>
 
-                    <a
-                      href={selectedStartup.website}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="flex items-center justify-center gap-2 w-full py-3 bg-primary text-black font-semibold rounded-lg hover:bg-primary-light transition-colors"
-                    >
-                      Visit Website
-                      <ExternalLink className="w-4 h-4" />
-                    </a>
+                    <div className="grid grid-cols-2 gap-4">
+                      <a
+                        href={selectedStartup.website}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center justify-center gap-2 py-3 bg-primary text-black font-semibold rounded-lg hover:bg-primary-light transition-colors"
+                      >
+                        Visit Website
+                        <ExternalLink className="w-4 h-4" />
+                      </a>
+                      <button
+                        onClick={() => {
+                          setShowRegistrationPopup(true);
+                          setSelectedStartup(null);
+                        }}
+                        className="flex items-center justify-center gap-2 py-3 bg-white/10 text-white font-semibold rounded-lg hover:bg-white/20 transition-colors border border-primary/30"
+                      >
+                        Register for Event
+                      </button>
+                    </div>
                   </div>
                 </div>
               </motion.div>
@@ -376,6 +434,125 @@ export default function StartupShowcase() {
         >
           Click on any orb to learn more about the startup
         </motion.p>
+
+        {/* Registration Popup */}
+        <AnimatePresence>
+          {showRegistrationPopup && (
+            <>
+              {/* Backdrop */}
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 bg-black/60 backdrop-blur-sm z-40"
+                onClick={() => setShowRegistrationPopup(false)}
+              />
+
+              {/* Popup Card */}
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9, y: 20 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.9, y: 20 }}
+                transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+                className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-md"
+              >
+                <div className="bg-dark-200 border border-primary/30 rounded-2xl overflow-hidden shadow-2xl shadow-primary/20">
+                  {/* Header */}
+                  <div className="relative p-6 bg-gradient-to-br from-primary/20 to-transparent">
+                    <button
+                      onClick={() => setShowRegistrationPopup(false)}
+                      className="absolute top-4 right-4 p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+
+                    <h3 className="font-display text-2xl font-bold mb-2">
+                      Register for the Event
+                    </h3>
+                    <p className="text-gray-400 text-sm">
+                      Join us for Nigeria's premier Satellite Week
+                    </p>
+                  </div>
+
+                  {/* Content */}
+                  <div className="p-6 space-y-4">
+                    <form className="space-y-4" onSubmit={(e) => {
+                      e.preventDefault();
+                      // Handle registration form submission
+                      alert('Registration form submitted! This would normally send data to your backend.');
+                      setShowRegistrationPopup(false);
+                    }}>
+                      <div>
+                        <label htmlFor="name" className="block text-sm font-medium text-gray-300 mb-2">
+                          Full Name
+                        </label>
+                        <input
+                          type="text"
+                          id="name"
+                          name="name"
+                          required
+                          className="w-full px-4 py-2 bg-white/5 border border-primary/30 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-primary transition-colors"
+                          placeholder="Enter your full name"
+                        />
+                      </div>
+
+                      <div>
+                        <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-2">
+                          Email Address
+                        </label>
+                        <input
+                          type="email"
+                          id="email"
+                          name="email"
+                          required
+                          className="w-full px-4 py-2 bg-white/5 border border-primary/30 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-primary transition-colors"
+                          placeholder="Enter your email"
+                        />
+                      </div>
+
+                      <div>
+                        <label htmlFor="organization" className="block text-sm font-medium text-gray-300 mb-2">
+                          Organization
+                        </label>
+                        <input
+                          type="text"
+                          id="organization"
+                          name="organization"
+                          className="w-full px-4 py-2 bg-white/5 border border-primary/30 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-primary transition-colors"
+                          placeholder="Your organization (optional)"
+                        />
+                      </div>
+
+                      <div>
+                        <label htmlFor="role" className="block text-sm font-medium text-gray-300 mb-2">
+                          Role
+                        </label>
+                        <select
+                          id="role"
+                          name="role"
+                          className="w-full px-4 py-2 bg-white/5 border border-primary/30 rounded-lg text-white focus:outline-none focus:border-primary transition-colors"
+                        >
+                          <option value="attendee">Attendee</option>
+                          <option value="startup">Startup Founder</option>
+                          <option value="investor">Investor</option>
+                          <option value="mentor">Mentor</option>
+                          <option value="media">Media</option>
+                        </select>
+                      </div>
+
+                      <button
+                        type="submit"
+                        className="w-full py-3 bg-primary text-black font-semibold rounded-lg hover:bg-primary-light transition-colors"
+                      >
+                        Complete Registration
+                      </button>
+                    </form>
+                  </div>
+                </div>
+              </motion.div>
+            </>
+          )}
+        </AnimatePresence>
       </div>
     </section>
   );
