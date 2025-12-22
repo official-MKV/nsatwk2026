@@ -1,0 +1,272 @@
+@import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Outfit:wght@300;400;500;600;700&display=swap');
+
+@import "tailwindcss";
+
+@theme {
+  /* Colors */
+  --color-primary: #089259;
+  --color-primary-dark: #067047;
+  --color-primary-light: #0ab36f;
+  --color-dark: #0a0a0a;
+  --color-dark-100: #111111;
+  --color-dark-200: #1a1a1a;
+  --color-dark-300: #2a2a2a;
+  --color-accent-green: #089259;
+  --color-accent-teal: #00bfa5;
+
+  /* Fonts */
+  --font-family-display: 'Space Grotesk', ui-sans-serif, system-ui, sans-serif;
+  --font-family-body: 'Outfit', ui-sans-serif, system-ui, sans-serif;
+
+  /* Animations */
+  --animate-float: float 6s ease-in-out infinite;
+  --animate-pulse-slow: pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  --animate-glow: glow 2s ease-in-out infinite alternate;
+  --animate-orbit: orbit 20s linear infinite;
+  --animate-twinkle: twinkle 3s ease-in-out infinite;
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+@keyframes glow {
+  0% { box-shadow: 0 0 5px rgba(8, 146, 89, 0.5), 0 0 10px rgba(8, 146, 89, 0.3); }
+  100% { box-shadow: 0 0 20px rgba(8, 146, 89, 0.8), 0 0 30px rgba(8, 146, 89, 0.5); }
+}
+
+@keyframes orbit {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+@keyframes twinkle {
+  0%, 100% { opacity: 0.3; }
+  50% { opacity: 1; }
+}
+
+@layer base {
+  * {
+    box-sizing: border-box;
+    padding: 0;
+    margin: 0;
+  }
+
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: #0a0a0a;
+    color: white;
+    font-family: 'Outfit', ui-sans-serif, system-ui, sans-serif;
+    overflow-x: hidden;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: #111111;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: #089259;
+    border-radius: 4px;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: #067047;
+  }
+}
+
+@layer utilities {
+  /* Grid background pattern */
+  .grid-bg {
+    background-image:
+      linear-gradient(rgba(8, 146, 89, 0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(8, 146, 89, 0.03) 1px, transparent 1px);
+    background-size: 50px 50px;
+  }
+
+  /* Glow effects */
+  .glow-green {
+    box-shadow: 0 0 20px rgba(8, 146, 89, 0.5), 0 0 40px rgba(8, 146, 89, 0.3);
+  }
+
+  .glow-text {
+    text-shadow: 0 0 20px rgba(8, 146, 89, 0.5);
+  }
+
+  /* Glass effect */
+  .glass {
+    background: rgba(255, 255, 255, 0.05);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+  }
+
+  /* Gradient borders */
+  .gradient-border {
+    position: relative;
+    background: #111111;
+    border-radius: 16px;
+  }
+
+  .gradient-border::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 16px;
+    padding: 1px;
+    background: linear-gradient(135deg, #089259, transparent 50%);
+    -webkit-mask:
+      linear-gradient(#fff 0 0) content-box,
+      linear-gradient(#fff 0 0);
+    -webkit-mask-composite: xor;
+    mask-composite: exclude;
+    pointer-events: none;
+  }
+
+  /* Orb floating animation */
+  @keyframes orb-float {
+    0%, 100% {
+      transform: translate(0, 0);
+    }
+    25% {
+      transform: translate(5px, -5px);
+    }
+    50% {
+      transform: translate(-3px, 3px);
+    }
+    75% {
+      transform: translate(3px, 5px);
+    }
+  }
+
+  .orb-float {
+    animation: orb-float 8s ease-in-out infinite;
+  }
+
+  /* Timeline horizontal scroll styling */
+  .timeline-scroll {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+
+  .timeline-scroll::-webkit-scrollbar {
+    display: none;
+  }
+
+  /* Star field background */
+  .star-field {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+  }
+
+  .star {
+    position: absolute;
+    background: white;
+    border-radius: 50%;
+    animation: twinkle 3s ease-in-out infinite;
+  }
+
+  /* Constellation lines */
+  .constellation-line {
+    stroke: rgba(8, 146, 89, 0.2);
+    stroke-width: 1;
+    stroke-dasharray: 5, 5;
+  }
+
+  /* Video overlay gradient */
+  .video-overlay {
+    background: linear-gradient(
+      180deg,
+      rgba(10, 10, 10, 0.7) 0%,
+      rgba(10, 10, 10, 0.5) 50%,
+      rgba(10, 10, 10, 0.9) 100%
+    );
+  }
+
+  /* Section divider */
+  .section-divider {
+    height: 1px;
+    background: linear-gradient(
+      90deg,
+      transparent,
+      rgba(8, 146, 89, 0.3),
+      transparent
+    );
+  }
+
+  /* Button hover effects */
+  .btn-primary {
+    @apply bg-primary text-black font-semibold px-6 py-3 rounded-lg transition-all duration-300;
+  }
+
+  .btn-primary:hover {
+    background-color: #0ab36f;
+    box-shadow: 0 0 30px rgba(8, 146, 89, 0.5);
+  }
+
+  .btn-secondary {
+    @apply border border-white/30 text-white font-medium px-6 py-3 rounded-lg transition-all duration-300;
+    background: rgba(255, 255, 255, 0.05);
+  }
+
+  .btn-secondary:hover {
+    border-color: #089259;
+    color: #089259;
+    background: rgba(8, 146, 89, 0.1);
+  }
+
+  /* Card hover effect */
+  .card-hover {
+    transition: all 0.3s ease;
+  }
+
+  .card-hover:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 40px rgba(8, 146, 89, 0.2);
+  }
+
+  /* Text gradient */
+  .text-gradient {
+    background: linear-gradient(135deg, #089259 0%, #00BFA5 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  /* Reveal animation classes */
+  .reveal {
+    opacity: 0;
+    transform: translateY(30px);
+    transition: all 0.8s ease;
+  }
+
+  .reveal.active {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  /* Stagger children animation */
+  .stagger-children > * {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+
+  .stagger-children.active > * {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .stagger-children > *:nth-child(1) { transition-delay: 0.1s; }
+  .stagger-children > *:nth-child(2) { transition-delay: 0.2s; }
+  .stagger-children > *:nth-child(3) { transition-delay: 0.3s; }
+  .stagger-children > *:nth-child(4) { transition-delay: 0.4s; }
+}
