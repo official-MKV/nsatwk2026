@@ -4,7 +4,12 @@
       "Bash(dir /b:*)",
       "Bash(npm run migrate:*)",
       "Bash(git add:*)",
-      "Bash(git commit:*)"
+      "Bash(git commit:*)",
+      "Bash(git push:*)",
+      "Bash(findstr:*)",
+      "Bash(npm install:*)",
+      "Bash(npx sanity cors add:*)",
+      "Bash(dir:*)"
     ]
   }
 }

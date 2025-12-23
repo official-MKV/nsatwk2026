@@ -1,6 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  /* config options here */
+  transpilePackages: ['next-sanity', 'sanity', '@sanity/vision'],
+  compiler: {
+    styledComponents: true,
+  },
 };
 
 export default nextConfig;

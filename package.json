@@ -4,21 +4,26 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev ",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "migrate": "node scripts/migrate-to-sanity.js"
+    "migrate": "node scripts/migrate-to-sanity.js",
+    "studio": "sanity dev",
+    "studio:deploy": "sanity deploy"
   },
   "dependencies": {
     "@sanity/client": "^7.13.2",
+    "@sanity/vision": "^5.1.0",
     "dotenv": "^17.2.3",
     "framer-motion": "^12.23.26",
     "lucide-react": "^0.562.0",
     "next": "16.1.0",
     "next-sanity": "^12.0.5",
     "react": "19.2.3",
-    "react-dom": "19.2.3"
+    "react-dom": "19.2.3",
+    "sanity": "^5.1.0",
+    "styled-components": "^6.1.19"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
