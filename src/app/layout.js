@@ -4,6 +4,11 @@ export const metadata = {
   title: 'NSATWK2026 - Nigerian Satellite Week 2026',
   description: 'Harnessing AI & Space Technologies for Nigeria\'s Digital Economy. Join us February 27-28, 2026 in Abuja.',
   keywords: ['satellite', 'space', 'technology', 'Nigeria', 'conference', 'startups'],
+  icons: {
+    icon: '/logo.png',
+    shortcut: '/logo.png',
+    apple: '/logo.png',
+  },
 };
 
 export default function RootLayout({ children }) {

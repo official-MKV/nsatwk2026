@@ -1,3 +1,5 @@
+'use client';
+
 import Navbar from "@/components/Navbar";
 import HeroSection from "@/components/sections/HeroSection";
 import AboutSection from "@/components/sections/AboutSection";
@@ -8,20 +10,23 @@ import Hosts from "@/components/sections/Hosts";
 import Panelist from "@/components/sections/Panelist";
 import CountDown from "@/components/sections/CountDown";
 import Footer from "@/components/Footer";
+import { RegistrationProvider } from "@/contexts/RegistrationContext";
 
 export default function Home() {
   return (
-    <div className="min-h-screen bg-black">
-      <Navbar />
-      <HeroSection />
-      <AboutSection />
-      <Timeline />
-      <StartupShowcase />
-      <Mentors />
-      <Hosts />
-      <Panelist />
-      <CountDown />
-      <Footer />
-    </div>
+    <RegistrationProvider>
+      <div className="min-h-screen bg-black">
+        <Navbar />
+        <HeroSection />
+        <AboutSection />
+        <Timeline />
+        <StartupShowcase />
+        <Mentors />
+        <Hosts />
+        <Panelist />
+        <CountDown />
+        <Footer />
+      </div>
+    </RegistrationProvider>
   );
 }

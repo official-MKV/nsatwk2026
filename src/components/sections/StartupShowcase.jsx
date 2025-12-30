@@ -4,31 +4,41 @@ import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence, useInView } from 'framer-motion';
 import { X, ExternalLink, Calendar, DollarSign, Tag } from 'lucide-react';
 import { fetchSanityData, queries } from '@/lib/sanity';
-
-// Generate orbital positions for constellation effect
+import { useRegistration } from '@/contexts/RegistrationContext';
 const generateOrbPositions = (count) => {
   const positions = [];
-  const centerX = 50;
-  const centerY = 50;
+  const cols = 6; // 6 columns
+  const rows = Math.ceil(count / cols);
   
+  // Spacing between orbs (in percentage of container)
+  const horizontalGap = 16; // space between columns
+  const verticalGap = 18; // space between rows
+  
+  // Calculate grid dimensions
+  const gridWidth = (cols - 1) * horizontalGap;
+  const gridHeight = (rows - 1) * verticalGap;
+  
+  // Center the grid
+  const startX = (100 - gridWidth) / 2;
+  const startY = (100 - gridHeight) / 2;
+
   for (let i = 0; i < count; i++) {
-    const angle = (i / count) * Math.PI * 2;
-    const radiusVariation = 15 + Math.random() * 25;
-    const x = centerX + Math.cos(angle) * radiusVariation + (Math.random() - 0.5) * 20;
-    const y = centerY + Math.sin(angle) * radiusVariation + (Math.random() - 0.5) * 20;
+    const row = Math.floor(i / cols);
+    const col = i % cols;
+    
+    const x = startX + (col * horizontalGap);
+    const y = startY + (row * verticalGap);
 
     positions.push({
-      x: Math.max(10, Math.min(90, x)),
-      y: Math.max(15, Math.min(85, y)),
-      size: 80 + Math.random() * 20, // Increased size from 12-20 to 80-100
-      delay: Math.random() * 2,
-      duration: 4 + Math.random() * 4,
+      x,
+      y,
+      size: 80, // slightly smaller orbs for better fit
+      delay: i * 0.05,
     });
   }
-  
+
   return positions;
 };
-
 export default function StartupShowcase() {
   const sectionRef = useRef(null);
   const isInView = useInView(sectionRef, { once: true, margin: '-50px' });
@@ -37,7 +47,10 @@ export default function StartupShowcase() {
   const [hoveredOrb, setHoveredOrb] = useState(null);
   const [startupShowcaseData, setStartupShowcaseData] = useState({ title: 'The Startup Showcase (Demo Day)', subtitle: 'Displaying the Urban Lift via Systems', startups: [] });
   const [loading, setLoading] = useState(true);
-  const [showRegistrationPopup, setShowRegistrationPopup] = useState(false);
+  const { showRegistrationPopup, setShowRegistrationPopup } = useRegistration();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitStatus, setSubmitStatus] = useState(null); // 'success' | 'error' | null
+  const [submitMessage, setSubmitMessage] = useState('');
 
   useEffect(() => {
     async function loadStartups() {
@@ -65,6 +78,7 @@ export default function StartupShowcase() {
     loadStartups();
   }, []);
 
+
   const handleOrbClick = (startup, index) => {
     setSelectedStartup({ ...startup, index });
   };
@@ -73,20 +87,70 @@ export default function StartupShowcase() {
     setSelectedStartup(null);
   };
 
-  // Generate connection lines between nearby orbs
-  const generateConnections = () => {
-    const connections = [];
-    orbPositions.forEach((pos1, i) => {
-      orbPositions.forEach((pos2, j) => {
-        if (i < j) {
-          const distance = Math.sqrt(
-            Math.pow(pos1.x - pos2.x, 2) + Math.pow(pos1.y - pos2.y, 2)
-          );
-          if (distance < 30) {
-            connections.push({ from: i, to: j, pos1, pos2 });
-          }
-        }
+  const handleRegistrationSubmit = async (e) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    setSubmitStatus(null);
+    setSubmitMessage('');
+
+    const formData = new FormData(e.target);
+    const data = {
+      name: formData.get('name'),
+      email: formData.get('email'),
+      organization: formData.get('organization'),
+      role: formData.get('role'),
+    };
+
+    try {
+      const response = await fetch('/api/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
       });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        setSubmitStatus('success');
+        setSubmitMessage(result.message || 'Registration successful!');
+        e.target.reset();
+        // Close popup after 3 seconds
+        setTimeout(() => {
+          setShowRegistrationPopup(false);
+          setSubmitStatus(null);
+          setSubmitMessage('');
+        }, 3000);
+      } else {
+        setSubmitStatus('error');
+        setSubmitMessage(result.error || 'Registration failed. Please try again.');
+      }
+    } catch (error) {
+      console.error('Registration error:', error);
+      setSubmitStatus('error');
+      setSubmitMessage('An error occurred. Please check your connection and try again.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Generate orbital connection lines for hovered orb only
+  const generateConnections = () => {
+    if (hoveredOrb === null) return [];
+
+    const connections = [];
+    const hoveredPos = orbPositions[hoveredOrb];
+
+    orbPositions.forEach((pos, i) => {
+      if (i !== hoveredOrb) {
+        const distance = Math.sqrt(
+          Math.pow(hoveredPos.x - pos.x, 2) + Math.pow(hoveredPos.y - pos.y, 2)
+        );
+        if (distance < 35) {
+          connections.push({ from: hoveredOrb, to: i, pos1: hoveredPos, pos2: pos });
+        }
+      }
     });
     return connections;
   };
@@ -144,45 +208,40 @@ export default function StartupShowcase() {
             transition={{ duration: 1, delay: 0.3 }}
             className="relative w-full h-[500px] md:h-[600px] lg:h-[700px]"
           >
-          {/* Connection Lines SVG */}
+          {/* Orbital Connection Lines SVG */}
           <svg className="absolute inset-0 w-full h-full pointer-events-none">
-            {connections.map((conn, i) => (
-              <motion.line
-                key={i}
-                x1={`${conn.pos1.x}%`}
-                y1={`${conn.pos1.y}%`}
-                x2={`${conn.pos2.x}%`}
-                y2={`${conn.pos2.y}%`}
-                className="constellation-line"
-                initial={{ pathLength: 0, opacity: 0 }}
-                animate={
-                  isInView
-                    ? {
-                        pathLength: 1,
-                        opacity: selectedStartup
-                          ? selectedStartup.index === conn.from ||
-                            selectedStartup.index === conn.to
-                            ? 0.5
-                            : 0.05
-                          : hoveredOrb !== null
-                          ? hoveredOrb === conn.from || hoveredOrb === conn.to
-                            ? 0.6
-                            : 0.1
-                          : 0.2,
-                      }
-                    : {}
-                }
-                transition={{ duration: 1.5, delay: 0.5 + i * 0.05 }}
-              />
-            ))}
+            <defs>
+              <linearGradient id="lineGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+                <stop offset="0%" stopColor="#089259" stopOpacity="0.2" />
+                <stop offset="50%" stopColor="#089259" stopOpacity="0.8" />
+                <stop offset="100%" stopColor="#089259" stopOpacity="0.2" />
+              </linearGradient>
+            </defs>
+            <AnimatePresence>
+              {connections.map((conn, i) => (
+                <motion.line
+                  key={`${conn.from}-${conn.to}`}
+                  x1={`${conn.pos1.x}%`}
+                  y1={`${conn.pos1.y}%`}
+                  x2={`${conn.pos2.x}%`}
+                  y2={`${conn.pos2.y}%`}
+                  stroke="url(#lineGradient)"
+                  strokeWidth="2"
+                  initial={{ pathLength: 0, opacity: 0 }}
+                  animate={{ pathLength: 1, opacity: 1 }}
+                  exit={{ pathLength: 0, opacity: 0 }}
+                  transition={{ duration: 0.4, delay: i * 0.05 }}
+                />
+              ))}
+            </AnimatePresence>
           </svg>
 
           {/* Startup Orbs */}
           {startupShowcaseData.startups.map((startup, index) => {
-            const position = orbPositions[index] || { x: 50, y: 50, size: 16, delay: 0, duration: 5 };
+            const position = orbPositions[index] || { x: 50, y: 50, size: 90, delay: 0 };
             const isSelected = selectedStartup?.index === index;
-            const isDimmed = selectedStartup !== null && !isSelected;
             const isHovered = hoveredOrb === index;
+            const isDimmed = (selectedStartup !== null && !isSelected) || (hoveredOrb !== null && !isHovered);
 
             return (
               <motion.div
@@ -197,32 +256,20 @@ export default function StartupShowcase() {
                 animate={
                   isInView
                     ? {
-                        opacity: isDimmed ? 0.2 : 1,
-                        scale: isSelected ? 1.3 : isHovered ? 1.2 : 1,
-                        x: isSelected || isDimmed ? 0 : [0, 5, -3, 4, 0],
-                        y: isSelected || isDimmed ? 0 : [0, -4, 3, -5, 0],
+                        opacity: isDimmed ? 0.15 : 1,
+                        scale: isSelected ? 1.3 : isHovered ? 1.15 : 1,
                       }
                     : {}
                 }
                 transition={{
                   opacity: { duration: 0.3 },
-                  scale: { duration: 0.3 },
-                  x: {
-                    duration: position.duration,
-                    repeat: Infinity,
-                    delay: position.delay,
-                    ease: 'easeInOut',
-                  },
-                  y: {
-                    duration: position.duration * 1.1,
-                    repeat: Infinity,
-                    delay: position.delay,
-                    ease: 'easeInOut',
-                  },
+                  scale: { duration: 0.3, type: 'spring', stiffness: 200, damping: 15 },
+                  delay: position.delay,
                 }}
                 onClick={() => handleOrbClick(startup, index)}
                 onMouseEnter={() => setHoveredOrb(index)}
                 onMouseLeave={() => setHoveredOrb(null)}
+                whileHover={{ scale: 1.15 }}
               >
                 {/* Outer glow */}
                 <motion.div
@@ -234,9 +281,10 @@ export default function StartupShowcase() {
                     marginTop: -position.size * 0.15,
                   }}
                   animate={{
-                    opacity: isSelected || isHovered ? 0.8 : 0.3,
-                    scale: isSelected || isHovered ? 1.2 : 1,
+                    opacity: isHovered ? 0.9 : 0.2,
+                    scale: isHovered ? 1.3 : 1,
                   }}
+                  transition={{ duration: 0.3 }}
                 />
 
                 {/* Main orb with logo */}
@@ -432,7 +480,7 @@ export default function StartupShowcase() {
           transition={{ delay: 1.5 }}
           className="text-center text-gray-500 text-sm mt-8"
         >
-          Click on any orb to learn more about the startup
+          Hover to see orbital connections, click to learn more about each startup
         </motion.p>
 
         {/* Registration Popup */}
@@ -476,77 +524,102 @@ export default function StartupShowcase() {
 
                   {/* Content */}
                   <div className="p-6 space-y-4">
-                    <form className="space-y-4" onSubmit={(e) => {
-                      e.preventDefault();
-                      // Handle registration form submission
-                      alert('Registration form submitted! This would normally send data to your backend.');
-                      setShowRegistrationPopup(false);
-                    }}>
-                      <div>
-                        <label htmlFor="name" className="block text-sm font-medium text-gray-300 mb-2">
-                          Full Name
-                        </label>
-                        <input
-                          type="text"
-                          id="name"
-                          name="name"
-                          required
-                          className="w-full px-4 py-2 bg-white/5 border border-primary/30 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-primary transition-colors"
-                          placeholder="Enter your full name"
-                        />
+                    {submitStatus === 'success' ? (
+                      <div className="text-center py-8">
+                        <div className="w-16 h-16 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                          <svg className="w-8 h-8 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                        </div>
+                        <h4 className="text-xl font-semibold text-green-500 mb-2">Registration Successful!</h4>
+                        <p className="text-gray-400">{submitMessage}</p>
                       </div>
+                    ) : (
+                      <form className="space-y-4" onSubmit={handleRegistrationSubmit}>
+                        {submitStatus === 'error' && (
+                          <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-lg">
+                            <p className="text-red-400 text-sm">{submitMessage}</p>
+                          </div>
+                        )}
 
-                      <div>
-                        <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-2">
-                          Email Address
-                        </label>
-                        <input
-                          type="email"
-                          id="email"
-                          name="email"
-                          required
-                          className="w-full px-4 py-2 bg-white/5 border border-primary/30 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-primary transition-colors"
-                          placeholder="Enter your email"
-                        />
-                      </div>
+                        <div>
+                          <label htmlFor="name" className="block text-sm font-medium text-gray-300 mb-2">
+                            Full Name
+                          </label>
+                          <input
+                            type="text"
+                            id="name"
+                            name="name"
+                            required
+                            disabled={isSubmitting}
+                            className="w-full px-4 py-2 bg-white/5 border border-primary/30 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            placeholder="Enter your full name"
+                          />
+                        </div>
 
-                      <div>
-                        <label htmlFor="organization" className="block text-sm font-medium text-gray-300 mb-2">
-                          Organization
-                        </label>
-                        <input
-                          type="text"
-                          id="organization"
-                          name="organization"
-                          className="w-full px-4 py-2 bg-white/5 border border-primary/30 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-primary transition-colors"
-                          placeholder="Your organization (optional)"
-                        />
-                      </div>
+                        <div>
+                          <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-2">
+                            Email Address
+                          </label>
+                          <input
+                            type="email"
+                            id="email"
+                            name="email"
+                            required
+                            disabled={isSubmitting}
+                            className="w-full px-4 py-2 bg-white/5 border border-primary/30 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            placeholder="Enter your email"
+                          />
+                        </div>
 
-                      <div>
-                        <label htmlFor="role" className="block text-sm font-medium text-gray-300 mb-2">
-                          Role
-                        </label>
-                        <select
-                          id="role"
-                          name="role"
-                          className="w-full px-4 py-2 bg-white/5 border border-primary/30 rounded-lg text-white focus:outline-none focus:border-primary transition-colors"
+                        <div>
+                          <label htmlFor="organization" className="block text-sm font-medium text-gray-300 mb-2">
+                            Organization
+                          </label>
+                          <input
+                            type="text"
+                            id="organization"
+                            name="organization"
+                            disabled={isSubmitting}
+                            className="w-full px-4 py-2 bg-white/5 border border-primary/30 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                            placeholder="Your organization (optional)"
+                          />
+                        </div>
+
+                        <div>
+                          <label htmlFor="role" className="block text-sm font-medium text-gray-300 mb-2">
+                            Role
+                          </label>
+                          <select
+                            id="role"
+                            name="role"
+                            disabled={isSubmitting}
+                            className="w-full px-4 py-2 bg-white/5 border border-primary/30 rounded-lg text-white focus:outline-none focus:border-primary transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            <option value="attendee">Attendee</option>
+                            <option value="startup">Startup Founder</option>
+                            <option value="investor">Investor</option>
+                            <option value="mentor">Mentor</option>
+                            <option value="media">Media</option>
+                          </select>
+                        </div>
+
+                        <button
+                          type="submit"
+                          disabled={isSubmitting}
+                          className="w-full py-3 bg-primary text-black font-semibold rounded-lg hover:bg-primary-light transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                         >
-                          <option value="attendee">Attendee</option>
-                          <option value="startup">Startup Founder</option>
-                          <option value="investor">Investor</option>
-                          <option value="mentor">Mentor</option>
-                          <option value="media">Media</option>
-                        </select>
-                      </div>
-
-                      <button
-                        type="submit"
-                        className="w-full py-3 bg-primary text-black font-semibold rounded-lg hover:bg-primary-light transition-colors"
-                      >
-                        Complete Registration
-                      </button>
-                    </form>
+                          {isSubmitting ? (
+                            <>
+                              <div className="w-5 h-5 border-2 border-black border-t-transparent rounded-full animate-spin"></div>
+                              Processing...
+                            </>
+                          ) : (
+                            'Complete Registration'
+                          )}
+                        </button>
+                      </form>
+                    )}
                   </div>
                 </div>
               </motion.div>

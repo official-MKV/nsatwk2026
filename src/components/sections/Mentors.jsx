@@ -23,6 +23,8 @@ export default function Mentors() {
           bio: mentor.bio,
           image: mentor.image || mentor.imagePath || '/mentors/mentor1.jpg'
         }));
+        console.log(formattedMentors)
+        
         setMentorsData(prev => ({ ...prev, mentors: formattedMentors }));
       } catch (error) {
         console.error('Error loading mentors:', error);
@@ -144,7 +146,7 @@ export default function Mentors() {
           </motion.div>
         )}
 
-        {/* Navigation dots/arrows */}
+      
         <motion.div
           initial={{ opacity: 0 }}
           animate={isInView ? { opacity: 1 } : {}}

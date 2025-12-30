@@ -4,10 +4,12 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Menu, X } from 'lucide-react';
 import { navData } from '@/data/data';
+import { useRegistration } from '@/contexts/RegistrationContext';
 
 export default function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const { setShowRegistrationPopup } = useRegistration();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -63,8 +65,8 @@ export default function Navbar() {
           </div>
 
           {/* CTA Button */}
-          <motion.a
-            href={navData.ctaButton.href}
+          <motion.button
+            onClick={() => setShowRegistrationPopup(true)}
             className="hidden md:flex btn-primary"
             initial={{ opacity: 0, scale: 0.8 }}
             animate={{ opacity: 1, scale: 1 }}
@@ -73,7 +75,7 @@ export default function Navbar() {
             whileTap={{ scale: 0.95 }}
           >
             {navData.ctaButton.text}
-          </motion.a>
+          </motion.button>
 
           {/* Mobile Menu Button */}
           <button
@@ -109,16 +111,18 @@ export default function Navbar() {
                   {link.text}
                 </motion.a>
               ))}
-              <motion.a
-                href={navData.ctaButton.href}
+              <motion.button
+                onClick={() => {
+                  setShowRegistrationPopup(true);
+                  setIsMobileMenuOpen(false);
+                }}
                 className="block w-full btn-primary text-center mt-4"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ delay: 0.2 }}
-                onClick={() => setIsMobileMenuOpen(false)}
               >
                 {navData.ctaButton.text}
-              </motion.a>
+              </motion.button>
             </div>
           </motion.div>
         )}

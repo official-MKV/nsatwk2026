@@ -4,9 +4,11 @@ import { motion, useScroll, useTransform } from 'framer-motion';
 import { useRef } from 'react';
 import { Calendar, MapPin, Download } from 'lucide-react';
 import { heroData } from '@/data/data';
+import { useRegistration } from '@/contexts/RegistrationContext';
 
 export default function Hero() {
   const ref = useRef(null);
+  const { setShowRegistrationPopup } = useRegistration();
   const { scrollYProgress } = useScroll({
     target: ref,
     offset: ['start start', 'end start'],
@@ -136,16 +138,29 @@ export default function Hero() {
             className="flex flex-col sm:flex-row items-center justify-center gap-4"
           >
             {heroData.ctaButtons.map((button, index) => (
-              <motion.a
-                key={button.text}
-                href={button.href}
-                className={button.primary ? 'btn-primary' : 'btn-secondary'}
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                {button.icon === 'download' && <Download className="w-4 h-4 mr-2 inline" />}
-                {button.text}
-              </motion.a>
+              button.href === '#register' ? (
+                <motion.button
+                  key={button.text}
+                  onClick={() => setShowRegistrationPopup(true)}
+                  className={button.primary ? 'btn-primary' : 'btn-secondary'}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  {button.icon === 'download' && <Download className="w-4 h-4 mr-2 inline" />}
+                  {button.text}
+                </motion.button>
+              ) : (
+                <motion.a
+                  key={button.text}
+                  href={button.href}
+                  className={button.primary ? 'btn-primary' : 'btn-secondary'}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  {button.icon === 'download' && <Download className="w-4 h-4 mr-2 inline" />}
+                  {button.text}
+                </motion.a>
+              )
             ))}
           </motion.div>
         </motion.div>
